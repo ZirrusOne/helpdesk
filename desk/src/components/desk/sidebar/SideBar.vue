@@ -17,7 +17,7 @@
       <template #right>
         <span class="flex items-center gap-0.5 font-medium text-gray-600">
           <component :is="device.modifierIcon" class="h-3 w-3" />
-          <span>K</span>
+          <span></span>
         </span>
       </template>
     </SidebarLink>
