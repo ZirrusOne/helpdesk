@@ -41,7 +41,7 @@
       </div>
     </div>
     <UniInput2
-      v-for="field in ticket.template.fields"
+      v-for="field in customFields"
       :key="field.fieldname"
       :field="field"
       :value="ticket[field.fieldname]"
@@ -116,6 +116,14 @@ const options = computed(() => {
   ];
 });
 
+const customFields = computed(() => {
+  const _custom_fields = props.ticket.template.fields.filter(
+    (f) => ["subject", "team", "priority"].indexOf(f.fieldname) === -1
+  );
+
+  return _custom_fields;
+});
+
 function update(field: Field["fieldname"], value: FieldValue, event = null) {
   if (field === "subject" && value === "") {
     createToast({
@@ -136,6 +144,9 @@ function update(field: Field["fieldname"], value: FieldValue, event = null) {
 :deep(.form-control button) {
   border-color: transparent;
   background: white;
+}
+:deep(.form-control textarea) {
+  field-sizing: content;
 }
 
 :deep(.form-control button) {
