@@ -1,3 +1,5 @@
+import { Component } from "vue";
+
 export interface Resource<A = unknown> {
   auto: boolean;
   loading: boolean;
@@ -77,6 +79,8 @@ export interface Ticket {
   subject: string;
   ticket_type: string;
   via_customer_portal: string;
+  agreement_status: string;
+  creation: string;
   feedback_rating?: number;
   feedback_text?: string;
   feedback_extra?: string;
@@ -162,3 +166,82 @@ export type UserInfo = {
   image: string;
   name: string;
 };
+
+export interface RenderField {
+  label: string;
+  name: string;
+  type: string;
+  placeholder?: string;
+  description?: string;
+}
+
+export interface EmailService {
+  name: string;
+  icon: string;
+  info: string;
+  link: string;
+  custom: boolean;
+}
+
+export type EmailStep = "email-list" | "email-add" | "email-edit";
+
+export interface EmailAccount {
+  email_account_name: string;
+  email_id: string;
+  service: string;
+  api_key?: string;
+  api_secret?: string;
+  password?: string;
+  enable_outgoing?: boolean;
+  enable_incoming?: boolean;
+  default_outgoing?: boolean;
+  default_incoming?: boolean;
+}
+
+export type TicketTab = "activity" | "email" | "comment" | "details";
+
+export interface TabObject {
+  name: TicketTab;
+  label: string;
+  icon: Component;
+  condition?: () => boolean;
+}
+
+export interface RootCategory {
+  category_id: string;
+  category_name: string;
+}
+
+export interface Article {
+  name: string;
+  title: string;
+  category: string;
+  published_on: string;
+  author: string;
+  subtitle: string;
+  article_image: string | null;
+  _user_tags: string | null;
+}
+
+export interface SubCategory {
+  name: string;
+  category_name: string;
+  icon: string | null;
+  articles: Article[];
+}
+
+export interface Author {
+  name: string;
+  image: string | null;
+  email?: string;
+}
+
+export interface Category {
+  categoryName: string;
+  subCategories: SubCategory[];
+  articles: Article[];
+  authors?: {
+    [key: string]: Author;
+  };
+  children?: (Article | SubCategory)[];
+}

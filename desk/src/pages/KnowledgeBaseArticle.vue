@@ -1,10 +1,10 @@
 <template>
   <div class="flex h-full flex-col overflow-hidden">
-    <PageTitle v-if="!route.meta.public">
-      <template #title>
+    <LayoutHeader>
+      <template #left-header>
         <Breadcrumbs :items="breadcrumbs" />
       </template>
-      <template #right>
+      <template #right-header v-if="!isCustomerPortal">
         <component
           :is="actionsComponent"
           :status="article.data?.status"
@@ -17,13 +17,14 @@
           @toggle-status="toggleStatus"
         />
       </template>
-    </PageTitle>
-    <div class="overflow-auto">
-      <div class="container m-auto my-12">
+    </LayoutHeader>
+    <div class="overflow-auto mx-auto w-full max-w-4xl px-5">
+      <div class="py-6">
         <TextEditor
-          :content="article.data?.content"
+          :content="textEditorContentWithIDs"
           :editable="editMode"
           :placeholder="placeholder"
+          :extensions="[PreserveIds]"
           class="rounded"
           :class="{
             shadow: editMode,
@@ -32,12 +33,13 @@
           editor-class="prose-f"
           @change="articleContent = $event"
         >
-          <template #top>
+          <template #top v-if="!route.meta.public">
             <component
               :is="topComponent"
               v-model:title="articleTitle"
               v-bind="options__"
             />
+
             <TextEditorFixedMenu
               v-if="editMode"
               class="-ml-1"
@@ -45,15 +47,23 @@
             />
           </template>
         </TextEditor>
+        <!-- <div
+          v-else-if="!article.data && !editMode"
+          class="text-gray-500 text-2xl font-semibold mb-5"
+        >
+          Article Not Found
+        </div> -->
         <RouterLink
           v-if="route.meta.public"
           :to="{ name: CUSTOMER_PORTAL_NEW_TICKET }"
+          class=""
         >
           <Button
             label="Still need help? Create a ticket"
             size="md"
             theme="gray"
             variant="solid"
+            class="mt-5"
           >
             <template #suffix> &rightarrow; </template>
           </Button>
@@ -63,7 +73,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { capture } from "@/telemetry";
 import {
@@ -84,15 +94,14 @@ import {
 import { createToast } from "@/utils";
 import { useAuthStore } from "@/stores/auth";
 import { useError } from "@/composables/error";
-
-import { PageTitle } from "@/components";
+import { LayoutHeader } from "@/components";
 import KnowledgeBaseArticleActionsEdit from "./knowledge-base/KnowledgeBaseArticleActionsEdit.vue";
 import KnowledgeBaseArticleActionsNew from "./knowledge-base/KnowledgeBaseArticleActionsNew.vue";
 import KnowledgeBaseArticleActionsView from "./knowledge-base/KnowledgeBaseArticleActionsView.vue";
 import KnowledgeBaseArticleTopEdit from "./knowledge-base/KnowledgeBaseArticleTopEdit.vue";
 import KnowledgeBaseArticleTopNew from "./knowledge-base/KnowledgeBaseArticleTopNew.vue";
-import KnowledgeBaseArticleTopPublic from "./knowledge-base/KnowledgeBaseArticleTopPublic.vue";
 import KnowledgeBaseArticleTopView from "./knowledge-base/KnowledgeBaseArticleTopView.vue";
+import { PreserveIds } from "@/tiptap-extensions";
 
 const props = defineProps({
   articleId: {
@@ -101,42 +110,58 @@ const props = defineProps({
   },
 });
 
+onMounted(() => {
+  setTimeout(() => {
+    scrollToHeading();
+  }, 100);
+});
+
+function scrollToHeading() {
+  const articleHeading = window.location.hash;
+  if (!articleHeading) return;
+  const headingElement = document.querySelector(articleHeading);
+  if (!headingElement) return;
+  headingElement.scrollIntoView({ behavior: "smooth" });
+}
+
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const isNew = props.articleId === "new";
 const editMode = ref(isNew);
-const categoryId = computed(
-  () => article.data?.category.name || route.query.category
-);
+const categoryId = computed(() => router.currentRoute.value.query.category);
 const subCategoryId = computed(
-  () => article.data?.sub_category.name || route.query.subCategory
+  () => router.currentRoute.value.query.subCategory
 );
+
+const isCustomerPortal = computed(() => route.meta.public);
+
 const breadcrumbs = computed(() => {
-  const items = [
+  const agentPortalItems = [
     {
       label: options__.value.categoryName,
       route: {
         name: AGENT_PORTAL_KNOWLEDGE_BASE_CATEGORY,
-        params: {
-          categoryId: options__.value.categoryId,
-        },
-      },
-    },
-    {
-      label: options__.value.subCategoryName,
-      route: {
-        name: AGENT_PORTAL_KNOWLEDGE_BASE_SUB_CATEGORY,
-        params: {
-          categoryId: options__.value.categoryId,
-          subCategoryId: options__.value.subCategoryId,
-        },
+        params: { categoryId: options__.value.categoryId },
       },
     },
   ];
+  // if (options__.value.subCategoryId !== options__.value.categoryId) {
+  agentPortalItems.push({
+    label: options__.value.subCategoryName,
+    route: {
+      name: AGENT_PORTAL_KNOWLEDGE_BASE_SUB_CATEGORY,
+      params: {
+        categoryId: options__.value.categoryId,
+        subCategoryId:
+          options__.value.subCategoryId || options__.value.categoryId,
+      },
+    },
+  });
+  // }
 
   if (!isNew) {
-    items.push({
+    agentPortalItems.push({
       label: article.data?.title,
       route: {
         name: AGENT_PORTAL_KNOWLEDGE_BASE_ARTICLE,
@@ -146,7 +171,40 @@ const breadcrumbs = computed(() => {
       },
     });
   }
-  return items;
+  if (!isCustomerPortal.value) {
+    return agentPortalItems;
+  }
+  const customerPortalItems = [
+    {
+      label: "Knowledge Base",
+      route: {
+        name: "KnowledgeBasePublicNew",
+      },
+    },
+  ];
+  if (options__.value.categoryId) {
+    customerPortalItems.push({
+      label: options__.value.categoryName,
+      route: {
+        name: "KnowledgeBasePublicNew",
+        query: { category: options__.value.categoryId },
+      },
+    });
+  }
+  if (options__.value.subCategoryId) {
+    customerPortalItems.push({
+      label: options__.value.subCategoryName,
+      route: {
+        name: "KnowledgeBasePublicNew",
+        query: {
+          category: options__.value.categoryId,
+          subCategory: options__.value.subCategoryId,
+        },
+      },
+    });
+  }
+
+  return customerPortalItems;
 });
 const placeholder = computed(() =>
   editMode.value ? "Write something..." : "Content is empty"
@@ -161,7 +219,6 @@ const actionsComponent = computed(() => {
 });
 
 const topComponent = computed(() => {
-  if (route.meta.public) return KnowledgeBaseArticleTopPublic;
   if (isNew) return KnowledgeBaseArticleTopNew;
   if (editMode.value) return KnowledgeBaseArticleTopEdit;
   return KnowledgeBaseArticleTopView;
@@ -194,7 +251,7 @@ const category = createDocumentResource({
 const subCategory = createDocumentResource({
   doctype: "HD Article Category",
   name: subCategoryId.value,
-  auto: true,
+  auto: subCategoryId.value !== categoryId.value ? true : false,
 });
 
 const options__ = computed(() => ({
@@ -331,4 +388,20 @@ const textEditorMenuButtons = [
     "DeleteTable",
   ],
 ];
+
+const textEditorContentWithIDs = computed(() =>
+  article.data?.content ? addLinksToHeadings(article.data?.content) : null
+);
+
+function addLinksToHeadings(content: string) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(content, "text/html");
+  const headings = doc.querySelectorAll("h2, h3, h4, h5, h6");
+  headings.forEach((heading) => {
+    const text = heading.textContent.trim();
+    const id = text.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    heading.setAttribute("id", id);
+  });
+  return doc.body.innerHTML;
+}
 </script>
