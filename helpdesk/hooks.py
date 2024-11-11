@@ -41,6 +41,9 @@ doc_events = {
     "Contact": {
         "before_insert": "helpdesk.helpdesk.hooks.contact.before_insert",
     },
+    "HD Ticket": {
+        "after_insert": "helpdesk.helpdesk.hooks.hd_ticket.update_email_account",
+    },
     "Assignment Rule": {
         "on_trash": "helpdesk.overrides.on_assignment_rule_trash",
     },
