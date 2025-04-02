@@ -1,21 +1,25 @@
 <template>
-  <div class="flex-1 flex flex-col">
-    <ActivityHeader :title="title" />
-    <div v-if="activities.length">
-      <div v-for="(activity, i) in activities" :key="activity.key">
+  <ActivityHeader :title="title" />
+  <div class="flex flex-col flex-1 overflow-y-auto">
+    <div v-if="activities.length" class="activities flex-1 h-full mt-1">
+      <div
+        v-for="(activity, i) in activities"
+        :key="activity.key"
+        class="activity"
+      >
         <!-- single activity -->
         <div
-          class="w-full activity px-3 sm:px-10 grid grid-cols-[30px_minmax(auto,_1fr)] gap-2 sm:gap-4"
+          class="w-full px-3 sm:px-10 grid grid-cols-[30px_minmax(auto,_1fr)] gap-2 sm:gap-4"
         >
           <div
-            class="relative flex justify-center after:absolute after:left-[50%] after:top-0 after:-z-10 after:border-l after:border-gray-200"
+            class="relative flex justify-center after:absolute after:left-[50%] after:top-1 after:-z-10 after:border-l after:border-gray-200"
             :class="[i != activities.length - 1 ? 'after:h-full' : 'after:h-4']"
           >
             <div
               class="z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white"
               :class="[
                 activity.type === 'comment' ? 'mt-0.5' : '',
-                activity.type === 'email' ? 'mt-2' : '',
+                activity.type === 'history' ? 'mt-1' : '',
               ]"
             >
               <Avatar
@@ -32,7 +36,7 @@
               <DotIcon v-else class="text-gray-600" />
             </div>
           </div>
-          <div class="mb-4 w-full">
+          <div class="mb-4 flex flex-1">
             <EmailArea
               v-if="activity.type === 'email'"
               :activity="activity"
@@ -70,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, inject, h, computed, onMounted, watch } from "vue";
+import { Ref, inject, h, computed, onMounted, watch, PropType } from "vue";
 import { useElementVisibility } from "@vueuse/core";
 import {
   DotIcon,
@@ -82,10 +86,10 @@ import {
 import { EmailArea, CommentBox, HistoryBox } from "@/components";
 import { useUserStore } from "@/stores/user";
 import { Avatar } from "frappe-ui";
-
+import { TicketActivity } from "@/types";
 const props = defineProps({
   activities: {
-    type: Array,
+    type: Array as PropType<TicketActivity[]>,
     required: true,
   },
   title: {
@@ -125,7 +129,7 @@ function scrollToLatestActivity() {
     let e = document.getElementsByClassName("activity");
     el = e[e.length - 1];
     if (el && !useElementVisibility(el).value) {
-      el.scrollIntoView({ behavior: "smooth" });
+      el.scrollIntoView();
       el.focus();
     }
   }, 500);

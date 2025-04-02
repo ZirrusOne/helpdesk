@@ -4,6 +4,7 @@
     :editor-class="[
       'prose-sm max-w-none mx-10 max-h-[50vh] overflow-y-auto py-3',
       true && 'min-h-[7rem]',
+      getFontFamily(newEmail),
     ]"
     :content="newEmail"
     :starterkit-options="{ heading: { levels: [2, 3, 4, 5, 6] } }"
@@ -96,7 +97,10 @@
               <template #default="{ openFileSelector }">
                 <Button variant="ghost" @click="openFileSelector()">
                   <template #icon>
-                    <AttachmentIcon class="h-4" />
+                    <AttachmentIcon
+                      class="h-4"
+                      style="color: #000000; stroke-width: 1.5 !important"
+                    />
                   </template>
                 </Button>
               </template>
@@ -106,7 +110,10 @@
               @click="showCannedResponseSelectorModal = true"
             >
               <template #icon>
-                <EmailIcon class="h-4" />
+                <EmailIcon
+                  class="h-4"
+                  style="color: #000000; stroke-width: 1.2"
+                />
               </template>
             </Button>
           </div>
@@ -120,7 +127,8 @@
                 bccEmailsClone = [];
                 cc = false;
                 bcc = false;
-                newEmail = '';
+                newEmail = null;
+                attachments = null;
                 emit('discard');
               }
             "
@@ -157,7 +165,13 @@ import {
   TextEditorFixedMenu,
   createResource,
 } from "frappe-ui";
-import { validateEmail } from "@/utils";
+import {
+  createToast,
+  validateEmail,
+  textEditorMenuButtons,
+  isContentEmpty,
+  getFontFamily,
+} from "@/utils";
 import {
   MultiSelectInput,
   AttachmentItem,
@@ -196,17 +210,15 @@ const props = defineProps({
     default: () => [],
   },
 });
+const emit = defineEmits(["submit", "discard"]);
+const doc = defineModel();
 
-const newEmail = useStorage("emailBoxContent", "");
-
+const newEmail = useStorage("emailBoxContent" + doc.value.name, "");
+const attachments = useStorage("emailBoxAttachments" + doc.value.name, []);
 const emailEmpty = computed(() => {
-  return !newEmail.value || newEmail.value === "<p></p>";
+  return isContentEmpty(newEmail.value);
 });
 
-const emit = defineEmits(["submit", "discard"]);
-
-const doc = defineModel();
-const attachments = ref([]);
 const toEmailsClone = ref([...props.toEmails]);
 const ccEmailsClone = ref([...props.ccEmails]);
 const bccEmailsClone = ref([...props.bccEmails]);
@@ -223,6 +235,17 @@ function applyCannedResponse(template) {
 }
 
 function submitMail() {
+  if (isContentEmpty(newEmail.value)) {
+    return;
+  }
+  if (!toEmailsClone.value.length) {
+    createToast({
+      text: "Please enter a recipient email address",
+      icon: "x",
+      iconClasses: "text-red-600",
+    });
+    return;
+  }
   const sendMail = createResource({
     url: "run_doc_method",
     makeParams: () => ({
@@ -238,9 +261,17 @@ function submitMail() {
       },
     }),
     onSuccess: () => {
-      newEmail.value = "";
+      resetState();
       emit("submit");
+    },
+    onError: (err) => {
       loading.value = false;
+      createToast({
+        title: err.exc_type,
+        text: err.messages[0],
+        icon: "x",
+        iconClasses: "text-red-500",
+      });
     },
   });
 
@@ -288,43 +319,11 @@ function addToReply(
     .run();
 }
 
-const textEditorMenuButtons = [
-  "Paragraph",
-  ["Heading 2", "Heading 3", "Heading 4", "Heading 5", "Heading 6"],
-  "Separator",
-  "Bold",
-  "Italic",
-  "Separator",
-  "Bullet List",
-  "Numbered List",
-  "Separator",
-  "Align Left",
-  "Align Center",
-  "Align Right",
-  "FontColor",
-  "Separator",
-  "Image",
-  "Video",
-  "Link",
-  "Blockquote",
-  "Code",
-  "Horizontal Rule",
-  [
-    "InsertTable",
-    "AddColumnBefore",
-    "AddColumnAfter",
-    "DeleteColumn",
-    "AddRowBefore",
-    "AddRowAfter",
-    "DeleteRow",
-    "MergeCells",
-    "SplitCell",
-    "ToggleHeaderColumn",
-    "ToggleHeaderRow",
-    "ToggleHeaderCell",
-    "DeleteTable",
-  ],
-];
+function resetState() {
+  newEmail.value = null;
+  attachments.value = null;
+  loading.value = false;
+}
 
 const editor = computed(() => {
   return editorRef.value.editor;
@@ -333,5 +332,6 @@ const editor = computed(() => {
 defineExpose({
   addToReply,
   editor,
+  submitMail,
 });
 </script>

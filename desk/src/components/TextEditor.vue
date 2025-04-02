@@ -4,7 +4,10 @@
       ref="e"
       :extensions="[PreserveVideoControls]"
       v-bind="$attrs"
-      editor-class="prose-f max-h-64 max-w-none overflow-auto my-4 min-h-[5rem]"
+      :editor-class="[
+        'prose-f max-h-64 max-w-none overflow-auto my-4 min-h-[5rem',
+        getFontFamily(modelValue),
+      ]"
       bubble-menu
       :content="modelValue"
       @change="$emit('update:modelValue', $event)"
@@ -64,6 +67,7 @@ import { UserAvatar } from "@/components";
 import { PreserveVideoControls } from "@/tiptap-extensions";
 import ConfirmationDialog from "@/components/ConfirmationDialog.vue"; // Import the ConfirmationDialog component
 import { useRouter } from "vue-router"; // Import the Vue Router
+import { getFontFamily } from "@/utils";
 
 interface P {
   modelValue: string;

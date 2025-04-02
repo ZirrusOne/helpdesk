@@ -39,23 +39,64 @@
         <template #right>
           <Badge
             v-if="isExpanded && notificationStore.unread"
-            :label="notificationStore.unread"
+            :label="
+              notificationStore.unread > 9 ? '9+' : notificationStore.unread
+            "
             theme="gray"
             variant="subtle"
           />
         </template>
       </SidebarLink>
     </div>
-    <div class="mb-4 flex flex-col gap-1">
-      <SidebarLink
-        v-for="option in menuOptions"
-        v-bind="option"
-        :key="option.label"
-        :is-expanded="isExpanded"
-        :is-active="isActiveTab(option.to)"
+    <div v-for="view in allViews" :key="view.label">
+      <div
+        v-if="!view.hideLabel && !isExpanded && view.views?.length"
+        class="mx-2 my-2 h-1"
       />
+      <Section
+        :label="view.label"
+        :hideLabel="view.hideLabel"
+        :opened="view.opened"
+      >
+        <template #header="{ opened, hide, toggle }">
+          <div
+            v-if="!hide"
+            class="flex cursor-pointer gap-1.5 px-1 text-base font-medium text-ink-gray-5 transition-all duration-300 ease-in-out"
+            :class="
+              !isExpanded
+                ? 'ml-0 h-0 overflow-hidden opacity-0'
+                : 'mt-4 h-7 w-auto opacity-100'
+            "
+            @click="toggle()"
+          >
+            <FeatherIcon
+              name="chevron-right"
+              class="h-4 text-ink-gray-9 transition-all duration-300 ease-in-out"
+              :class="{ 'rotate-90': opened }"
+            />
+            <span>{{ view.label }}</span>
+          </div>
+        </template>
+        <nav class="flex flex-col">
+          <SidebarLink
+            v-for="link in view.views"
+            :icon="link.icon"
+            :label="link.label"
+            :to="link.to"
+            :key="link.label"
+            :is-expanded="isExpanded"
+            :is-active="isActiveTab(link.to)"
+            class="my-0.5 emoji"
+            :onClick="link.onClick"
+          />
+        </nav>
+      </Section>
     </div>
     <div class="grow" />
+    <TrialBanner
+      v-if="isFCSite && !isCustomerPortal"
+      :isSidebarCollapsed="!isExpanded"
+    />
     <SidebarLink
       :icon="isExpanded ? LucideArrowLeftFromLine : LucideArrowRightFromLine"
       :is-active="false"
@@ -63,18 +104,19 @@
       :label="isExpanded ? 'Collapse' : 'Expand'"
       :on-click="() => (isExpanded = !isExpanded)"
     />
-    <SettingsModal v-if="authStore.isAdmin" v-model="showSettingsModal" />
+    <SettingsModal v-model="showSettingsModal" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, markRaw, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { TrialBanner } from "frappe-ui/frappe";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useNotificationStore } from "@/stores/notification";
 import { useSidebarStore } from "@/stores/sidebar";
-import { CUSTOMER_PORTAL_LANDING, CUSTOMER_PORTAL_ROUTES } from "@/router";
+import { CUSTOMER_PORTAL_LANDING } from "@/router";
 import { useDevice } from "@/composables";
 import { SidebarLink } from "@/components";
 import UserMenu from "@/components/UserMenu.vue";
@@ -84,10 +126,17 @@ import LucideBell from "~icons/lucide/bell";
 import LucideSearch from "~icons/lucide/search";
 import SettingsModal from "@/components/Settings/SettingsModal.vue";
 import Apps from "@/components/Apps.vue";
+import { isCustomerPortal } from "@/utils";
 import {
   agentPortalSidebarOptions,
   customerPortalSidebarOptions,
 } from "./layoutSettings";
+import { Section } from "@/components";
+import { useView, currentView } from "@/composables/useView";
+import { FrappeCloudIcon } from "@/components/icons";
+import { confirmLoginToFrappeCloud } from "@/composables/fc";
+import { useScreenSize } from "@/composables/screen";
+const { isMobileView } = useScreenSize();
 
 const route = useRoute();
 const router = useRouter();
@@ -96,13 +145,66 @@ const notificationStore = useNotificationStore();
 const { isExpanded, width } = storeToRefs(useSidebarStore());
 const device = useDevice();
 const showSettingsModal = ref(false);
-const isCustomerPortal = route.meta.public ?? false;
 
-const menuOptions = computed(() => {
-  return isCustomerPortal
+const { pinnedViews, publicViews } = useView();
+
+declare global {
+  interface Window {
+    is_fc_site: boolean;
+  }
+}
+const isFCSite = ref(window.is_fc_site);
+
+const allViews = computed(() => {
+  const items = isCustomerPortal.value
     ? customerPortalSidebarOptions
     : agentPortalSidebarOptions;
+
+  const options = [
+    {
+      label: "All Views",
+      hideLabel: true,
+      opened: true,
+      views: items,
+    },
+  ];
+  if (publicViews.value?.length && !isCustomerPortal.value) {
+    options.push({
+      label: "Public Views",
+      opened: true,
+      hideLabel: false,
+      views: parseViews(publicViews.value),
+    });
+  }
+  if (pinnedViews.value?.length) {
+    options.push({
+      label: "Private Views",
+      opened: true,
+      hideLabel: false,
+      views: parseViews(pinnedViews.value),
+    });
+  }
+  return options;
 });
+
+function parseViews(views) {
+  return views.map((view) => {
+    return {
+      label: view.label,
+      icon: view.icon,
+      to: {
+        name: view.route_name,
+        query: { view: view.name },
+      },
+      onClick: () => {
+        currentView.value = {
+          label: view.label,
+          icon: view.icon,
+        };
+      },
+    };
+  });
+}
 
 const customerPortalDropdown = computed(() => [
   {
@@ -135,9 +237,16 @@ const agentPortalDropdown = computed(() => [
     onClick: () => window.open("https://docs.frappe.io/helpdesk"),
   },
   {
+    label: "Login to Frappe Cloud",
+    icon: FrappeCloudIcon,
+    onClick: () => confirmLoginToFrappeCloud(),
+    condition: () => !isMobileView.value && window.is_fc_site,
+  },
+  {
     label: "Settings",
     icon: "settings",
     onClick: () => (showSettingsModal.value = true),
+    condition: () => authStore.isAdmin || authStore.isManager,
   },
   {
     label: "Log out",
@@ -147,12 +256,15 @@ const agentPortalDropdown = computed(() => [
 ]);
 
 const profileSettings = computed(() => {
-  return isCustomerPortal
+  return isCustomerPortal.value
     ? customerPortalDropdown.value
     : agentPortalDropdown.value;
 });
 
-function isActiveTab(to: string) {
+function isActiveTab(to: any) {
+  if (route.query.view) {
+    return route.query.view == to?.query?.view;
+  }
   return route.name === to;
 }
 

@@ -1,6 +1,10 @@
 import { useClipboard, useDateFormat, useTimeAgo } from "@vueuse/core";
 import { toast } from "frappe-ui";
+import { ref, h, markRaw } from "vue";
 import zod from "zod";
+import { gemoji } from "gemoji";
+import TicketIcon from "./components/icons/TicketIcon.vue";
+import dayjs from "dayjs";
 /**
  * Wrapper to create toasts, supplied with default options.
  * https://frappeui.com/components/toast.html
@@ -115,4 +119,122 @@ export function setupCustomActions(data, obj) {
   }
 
   data._customActions = actions;
+}
+
+export const isCustomerPortal = ref(false);
+
+export async function copyToClipboard(text: string, message?: string) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+  } else {
+    let input = document.createElement("input");
+    let body = document.querySelector("body");
+    body.appendChild(input);
+    input.value = text;
+    input.select();
+    document.execCommand("copy");
+    input.remove();
+  }
+  createToast({
+    title: "Copied to clipboard",
+    text: message,
+    icon: "check",
+    iconClasses: "text-green-600",
+  });
+}
+
+export const textEditorMenuButtons = [
+  "Paragraph",
+  ["Heading 2", "Heading 3", "Heading 4", "Heading 5", "Heading 6"],
+  "Separator",
+  "Bold",
+  "Italic",
+  "Separator",
+  "Bullet List",
+  "Numbered List",
+  "Separator",
+  "Align Left",
+  "Align Center",
+  "Align Right",
+  "FontColor",
+  "Separator",
+  "Image",
+  "Video",
+  "Link",
+  "Blockquote",
+  "Code",
+  "Horizontal Rule",
+  [
+    "InsertTable",
+    "AddColumnBefore",
+    "AddColumnAfter",
+    "DeleteColumn",
+    "AddRowBefore",
+    "AddRowAfter",
+    "DeleteRow",
+    "MergeCells",
+    "SplitCell",
+    "ToggleHeaderColumn",
+    "ToggleHeaderRow",
+    "ToggleHeaderCell",
+    "DeleteTable",
+  ],
+];
+
+export function isContentEmpty(content: string) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(content, "text/html");
+  return doc.body.textContent === "";
+}
+
+export function isTouchScreenDevice() {
+  return "ontouchstart" in document.documentElement;
+}
+
+export function isEmoji(str) {
+  const emojiList = gemoji.map((emoji) => emoji.emoji);
+  return emojiList.includes(str);
+}
+
+export function getIcon(icon) {
+  if (isEmoji(icon)) {
+    return h("div", icon);
+  }
+  return icon || markRaw(TicketIcon);
+}
+export function formatTimeShort(date: string) {
+  const now = dayjs();
+  const inputDate = dayjs.tz(date);
+  const diffSeconds = now.diff(inputDate, "second");
+  const diffMinutes = now.diff(inputDate, "minute");
+  const diffHours = now.diff(inputDate, "hour");
+  const diffDays = now.diff(inputDate, "day");
+  const diffWeeks = now.diff(inputDate, "week");
+  const diffMonths = now.diff(inputDate, "month");
+  const diffYears = now.diff(inputDate, "year");
+
+  if (diffSeconds < 60) return `${diffSeconds} s`;
+  if (diffMinutes < 60) return `${diffMinutes} m`;
+  if (diffHours < 24) return `${diffHours} h`;
+  if (diffDays < 7) return `${diffDays} d`;
+  if (diffWeeks < 4) return `${diffWeeks} w`;
+  if (diffMonths < 12) return `${diffMonths} M`;
+  return `${diffYears}Y`;
+}
+
+function hasArabicContent(content: string) {
+  const arabicRegex = /[\u0600-\u06FF]/;
+  return arabicRegex.test(content);
+}
+
+export function getFontFamily(content: string) {
+  const langMap = {
+    default: "!font-[InterVar]",
+    arabic: "!font-[system-ui]",
+  };
+  let lang = "default";
+  if (hasArabicContent(content)) {
+    lang = "arabic";
+  }
+  return langMap[lang];
 }

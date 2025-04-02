@@ -27,7 +27,12 @@
         <div class="space-y-2">
           <span> Select a rating </span>
           <span class="text-red-500"> * </span>
-          <StarRating v-model:rating="rating" :static="false" />
+          <StarRating
+            :static="false"
+            :rating="rating"
+            v-model="rating"
+            @update:model-value="rating = $event"
+          />
         </div>
         <div v-if="options.data?.length" class="space-y-2">
           <span> Pick an option </span>
@@ -59,7 +64,6 @@
 <script setup lang="ts">
 import { inject, ref, watch } from "vue";
 import { createResource, createListResource } from "frappe-ui";
-import { useError } from "@/composables/error";
 import { StarRating } from "@/components";
 import { ITicket } from "./symbols";
 
@@ -81,7 +85,6 @@ const options = createListResource({
   doctype: "HD Ticket Feedback Option",
   fields: ["name", "label"],
   pageLength: 99999,
-  onError: useError(),
 });
 const setValue = createResource({
   url: "frappe.client.set_value",
@@ -98,7 +101,6 @@ const setValue = createResource({
     emit("update:open", false);
     ticket.reload();
   },
-  onError: useError(),
 });
 watch(rating, (r) => {
   preset.value = null;

@@ -12,7 +12,7 @@
     </div>
     <!-- banner for setting up email account -->
     <div class="flex items-center gap-2 rounded-md p-2 ring-1 ring-gray-200">
-      <IconAlert
+      <CircleAlert
         class="h-6 w-5 w-min-5 w-max-5 min-h-5 max-w-5 text-blue-500"
       />
       <div class="text-wrap text-xs text-gray-700">
@@ -90,7 +90,7 @@ import {
 } from "./emailConfig";
 import { EmailAccount, EmailStep } from "@/types";
 import { createToast } from "@/utils";
-import IconAlert from "~icons/espresso/alert-circle";
+import CircleAlert from "~icons/lucide/circle-alert";
 
 interface P {
   accountData: EmailAccount;
@@ -113,6 +113,7 @@ const state = reactive({
   api_key: props.accountData?.api_key || null,
   api_secret: props.accountData?.api_secret || null,
   password: props.accountData?.password || null,
+  frappe_mail_site: props.accountData?.frappe_mail_site || "",
   enable_incoming: props.accountData.enable_incoming || false,
   enable_outgoing: props.accountData.enable_outgoing || false,
   default_outgoing: props.accountData.default_outgoing || false,
@@ -135,7 +136,7 @@ const fields = computed(() => {
   return popularProviderFields;
 });
 
-const error = ref("");
+const error = ref<string | undefined>();
 const loading = ref(false);
 async function updateAccount() {
   error.value = validateInputs(state, isCustomService.value);
@@ -189,7 +190,8 @@ const isDirty = computed(() => {
     state.enable_incoming !== props.accountData.enable_incoming ||
     state.enable_outgoing !== props.accountData.enable_outgoing ||
     state.default_outgoing !== props.accountData.default_outgoing ||
-    state.default_incoming !== props.accountData.default_incoming
+    state.default_incoming !== props.accountData.default_incoming ||
+    state.frappe_mail_site !== props.accountData.frappe_mail_site
   );
 });
 

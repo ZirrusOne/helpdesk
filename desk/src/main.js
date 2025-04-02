@@ -19,6 +19,7 @@ import "./index.css";
 import { router } from "./router";
 import { socket } from "./socket";
 import { createToast } from "@/utils";
+import { posthogPlugin } from "./telemetry";
 
 const globalComponents = {
   Badge,
@@ -34,9 +35,12 @@ const globalComponents = {
 
 setConfig("resourceFetcher", frappeRequest);
 setConfig("fallbackErrorHandler", (error) => {
+  const text = error.exc_type
+    ? (error.messages || error.message || []).join(", ")
+    : error.message;
   createToast({
     title: error.exc_type || "Error",
-    text: (error.messages || []).join(", "),
+    text,
     icon: "alert-triangle",
     iconClasses: "text-red-500",
   });
@@ -48,7 +52,7 @@ const app = createApp(App);
 app.use(resourcesPlugin);
 app.use(pinia);
 app.use(router);
-
+app.use(posthogPlugin);
 for (const c in globalComponents) {
   app.component(c, globalComponents[c]);
 }

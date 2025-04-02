@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-2 px-6 pb-1 leading-5 first:mt-3">
+  <div class="flex gap-2 px-6 pb-1 leading-5 first:mt-3 items-baseline">
     <Tooltip :text="field.label">
       <div class="w-[106px] shrink-0 truncate text-sm text-gray-600">
         {{ field.label }}
@@ -11,12 +11,26 @@
     >
       <component
         :is="component"
-        :key="transValue"
+        :key="field.fieldname"
         class="form-control"
         :placeholder="`Add ${field.label}`"
         :value="transValue"
-        @change="
-          emitUpdate(field.fieldname, $event.value || $event.target.value)
+        autocomplete="off"
+        v-on="
+          textFields.includes(field.fieldtype)
+            ? {
+                blur: (event) => {
+                  emitUpdate(field.fieldname, event.target.value);
+                },
+              }
+            : {
+                change: (event) => {
+                  emitUpdate(
+                    field.fieldname,
+                    event?.value || event?.target?.value || event
+                  );
+                },
+              }
         "
       />
     </div>
@@ -25,10 +39,9 @@
 
 <script setup lang="ts">
 import { computed, h } from "vue";
-import { Autocomplete } from "@/components";
+import { Autocomplete, Link } from "@/components";
 import { createResource, FormControl, Tooltip } from "frappe-ui";
 import { Field, FieldValue } from "@/types";
-import SearchComplete from "./SearchComplete.vue";
 
 interface P {
   field: Field;
@@ -47,14 +60,17 @@ interface E {
 const props = defineProps<P>();
 const emit = defineEmits<E>();
 
+const textFields = ["Long Text", "Small Text", "Text", "Text Editor"];
+
 const component = computed(() => {
   if (props.field.url_method) {
     return h(Autocomplete, {
       options: apiOptions.data,
     });
   } else if (props.field.fieldtype === "Link" && props.field.options) {
-    return h(SearchComplete, {
+    return h(Link, {
       doctype: props.field.options,
+      hideMe: true,
     });
   } else if (props.field.fieldtype === "Select") {
     return h(Autocomplete, {
@@ -74,6 +90,10 @@ const component = computed(() => {
           value: 0,
         },
       ],
+    });
+  } else if (textFields.includes(props.field.fieldtype)) {
+    return h(FormControl, {
+      type: "textarea",
     });
   } else {
     return h(FormControl);

@@ -35,7 +35,7 @@
         v-for="field in ticketBasicInfo"
       >
         <span class="w-[126px] text-sm text-gray-600">{{ field.label }}</span>
-        <span class="text-base text-gray-800">
+        <span class="text-base text-gray-800 flex-1">
           {{ field.value }}
         </span>
       </div>
@@ -58,7 +58,7 @@
     <!-- feedback component -->
     <TicketFeedback
       v-if="ticket.data.feedback_rating"
-      class="border-b px-6 py-3 text-base text-gray-600"
+      class="border-b text-base text-gray-600"
       :ticket="ticket.data"
     />
     <div class="flex flex-col gap-4 pt-0 px-5 py-3">
@@ -67,7 +67,7 @@
         v-for="field in ticketAdditionalInfo"
       >
         <span class="w-[126px] text-sm text-gray-600">{{ field.label }}</span>
-        <span class="text-base text-gray-800">
+        <span class="text-base text-gray-800 flex-1">
           {{ field.value }}
         </span>
       </div>

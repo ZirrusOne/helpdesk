@@ -28,6 +28,11 @@
   "column_break_zxek",
   "ticket_restrictions_section",
   "allow_anyone_to_create_tickets",
+  "is_feedback_mandatory",
+  "auto_update_status",
+  "column_break_iarl",
+  "auto_close_tickets",
+  "auto_close_after_days",
   "workflow_tab",
   "skip_email_workflow",
   "instantly_send_email",
@@ -285,20 +290,52 @@
   },
   {
    "fieldname": "ticket_restrictions_section",
-   "fieldtype": "Section Break",
-   "label": "Ticket Restrictions"
+   "fieldtype": "Section Break"
   },
   {
    "default": "0",
-   "description": "If enabled, anyone will be able to create tickets (without any permission). \nUseful in cases where you wants users to create tickets via webforms or some external APIs without authentication.",
+   "description": "If enabled, anyone will be able to create tickets (without any permission). ",
    "fieldname": "allow_anyone_to_create_tickets",
    "fieldtype": "Check",
    "label": "Allow anyone to create tickets"
+  },
+  {
+   "default": "1",
+   "description": "When enabled, the ticket status will automatically change to \"Replied\" whenever the agent responds to a ticket.\n",
+   "fieldname": "auto_update_status",
+   "fieldtype": "Check",
+   "label": "Auto update status"
+  },
+  {
+   "default": "1",
+   "description": "If enabled, the feedback dialog will be shown, when a user tries to close a ticket. \n",
+   "fieldname": "is_feedback_mandatory",
+   "fieldtype": "Check",
+   "label": "Make feedback mandatory"
+  },
+  {
+   "fieldname": "column_break_iarl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_close_tickets",
+   "fieldtype": "Check",
+   "label": "Automatically Close Replied Tickets"
+  },
+  {
+   "default": "14",
+   "depends_on": "auto_close_tickets",
+   "fieldname": "auto_close_after_days",
+   "fieldtype": "Int",
+   "label": "Auto-close after (Days)",
+   "mandatory_depends_on": "auto_close_tickets"
   }
  ],
+ "grid_page_length": 50,
  "issingle": 1,
  "links": [],
- "modified": "2024-10-22 02:14:33.360809",
+ "modified": "2025-03-21 17:13:09.867555",
  "modified_by": "Administrator",
  "module": "Helpdesk",
  "name": "HD Settings",
@@ -323,6 +360,7 @@
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

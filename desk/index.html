@@ -206,10 +206,6 @@
     <div id="popovers"></div>
     <script type="module" src="/src/main.js"></script>
     <script>
-      window.csrf_token = "{{ csrf_token }}";
-      window.frappe_version = "{{ frappe_version }}";
-      window.helpdesk_version = "{{ helpdesk_version }}";
-      window.site_name = "{{ site_name }}";
       window.favicon = "{{ favicon }}";
 
       document.querySelectorAll("link[rel='icon']").forEach((link) => {

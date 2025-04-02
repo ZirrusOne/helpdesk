@@ -1,9 +1,9 @@
 import { Component } from "vue";
 
-export interface Resource<A = unknown> {
+export interface Resource<T = unknown> {
   auto: boolean;
   loading: boolean;
-  data: A;
+  data: T;
   pageLength: number;
   totalCount: number;
   hasNextPage: boolean;
@@ -13,6 +13,16 @@ export interface Resource<A = unknown> {
   next: () => void;
   reload: () => void;
   update: (r: unknown) => void;
+}
+
+export interface Error {
+  exc_type: string;
+  exc: string;
+  response: string;
+  status: string;
+  messages: string;
+  stack: string;
+  message: string;
 }
 
 export interface Comment {
@@ -90,6 +100,7 @@ export interface Ticket {
   history: Activity[];
   template: Template;
   views: ViewLog[];
+  _customActions: Function[];
 }
 
 export interface DocField {
@@ -122,6 +133,7 @@ export interface Field {
   required: 0 | 1;
   description?: null;
   url_method?: string;
+  link_filters?: string;
 }
 
 export type FieldValue = string | number | boolean;
@@ -192,6 +204,7 @@ export interface EmailAccount {
   api_key?: string;
   api_secret?: string;
   password?: string;
+  frappe_mail_site?: string;
   enable_outgoing?: boolean;
   enable_incoming?: boolean;
   default_outgoing?: boolean;
@@ -215,33 +228,106 @@ export interface RootCategory {
 export interface Article {
   name: string;
   title: string;
-  category: string;
+  category_name: string;
+  category_id: string;
   published_on: string;
-  author: string;
+  author: Author;
   subtitle: string;
   article_image: string | null;
   _user_tags: string | null;
+  status: string;
+  creation: string;
+  content: string;
+  modified: string;
+  feedback: FeedbackAction;
 }
 
-export interface SubCategory {
-  name: string;
-  category_name: string;
-  icon: string | null;
-  articles: Article[];
-}
+export type FeedbackAction = 0 | 1 | 2; // 0: neutral, 1: like, 2: dislike
 
 export interface Author {
   name: string;
   image: string | null;
-  email?: string;
+  email: string;
 }
 
 export interface Category {
   categoryName: string;
-  subCategories: SubCategory[];
   articles: Article[];
   authors?: {
     [key: string]: Author;
   };
-  children?: (Article | SubCategory)[];
+  children?: Article[];
+}
+
+export interface View {
+  filters: string;
+  order_by: string;
+  columns: string;
+  rows: string;
+  dt?: string;
+  type?: string;
+  route_name?: string;
+  user?: string;
+  icon?: string;
+  label?: string;
+  is_default?: boolean;
+  pinned?: boolean;
+  public?: boolean;
+  group_by_field?: string;
+  name?: string;
+  is_customer_portal?: boolean;
+}
+
+export interface ViewType {
+  view_type: string;
+  group_by_field: string;
+  name: string;
+}
+
+export interface Breadcrumb {
+  label: string;
+  route?: {
+    name: string;
+    params?: Record<string, string>;
+  };
+}
+
+// Activity Types
+interface BaseActivity {
+  type: string;
+  key: string;
+  creation: string;
+  content: string;
+}
+
+interface HistoryActivity extends BaseActivity {
+  type: "history";
+  user: string;
+  relatedActivities: HistoryActivity[];
+}
+
+export interface EmailActivity extends BaseActivity {
+  type: "email";
+  attachments: FileAttachment;
+  bcc: string;
+  cc: string;
+  sender: { full_name: string; name: string };
+  subject: string;
+  to: string;
+}
+
+export interface CommentActivity extends BaseActivity {
+  type: "comment";
+  name: string;
+  commenter: string;
+  commentedBy: string;
+  attachments: FileAttachment[];
+}
+
+export type TicketActivity = HistoryActivity | EmailActivity | CommentActivity;
+
+interface FileAttachment {
+  name: string;
+  file_name: string;
+  file_url: string;
 }

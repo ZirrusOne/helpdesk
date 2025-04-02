@@ -1,11 +1,9 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/user";
-
+import { isCustomerPortal } from "@/utils";
 import { useScreenSize } from "@/composables/screen";
 const { isMobileView } = useScreenSize();
-
-export const ONBOARDING_PAGE = "Setup";
 
 export const CUSTOMER_PORTAL_NEW_TICKET = "TicketNew";
 export const CUSTOMER_PORTAL_TICKET = "TicketCustomer";
@@ -20,10 +18,8 @@ export const AGENT_PORTAL_TICKET = "TicketAgent";
 export const AGENT_PORTAL_TICKET_LIST = "TicketsAgent";
 export const AGENT_PORTAL_KNOWLEDGE_BASE = "DeskKBHome";
 export const AGENT_PORTAL_KNOWLEDGE_BASE_CATEGORY = "DeskKBCategory";
-export const AGENT_PORTAL_KNOWLEDGE_BASE_SUB_CATEGORY = "DeskKBSubcategory";
 export const AGENT_PORTAL_KNOWLEDGE_BASE_ARTICLE = "DeskKBArticle";
 
-export const KB_PUBLIC = "KBHome";
 export const KB_PUBLIC_ARTICLE = "KBArticlePublic";
 export const KB_PUBLIC_CATEGORY = "KBCategoryPublic";
 
@@ -72,12 +68,12 @@ const routes = [
           {
             path: "",
             name: "TicketsCustomer",
-            component: () => import("@/pages/Tickets.vue"),
+            component: () => import("@/pages/ticket/Tickets.vue"),
           },
           {
             path: "new/:templateId?",
             name: "TicketNew",
-            component: () => import("@/pages/TicketNew.vue"),
+            component: () => import("@/pages/ticket/TicketNew.vue"),
             props: true,
             meta: {
               onSuccessRoute: "TicketCustomer",
@@ -87,28 +83,28 @@ const routes = [
           {
             path: ":ticketId",
             name: "TicketCustomer",
-            component: () => import("@/pages/TicketCustomer.vue"),
+            component: () => import("@/pages/ticket/TicketCustomer.vue"),
             props: true,
           },
         ],
       },
-      // handle knowledge base routing
       {
-        path: "knowledge-base-public",
-        children: [
-          {
-            path: "",
-            name: "KnowledgeBasePublicNew",
-            component: () =>
-              import("@/pages/knowledge-base-v2/KnowledgeBasePublic.vue"),
-          },
-          {
-            path: "articles/:articleId?",
-            name: "KBArticlePublicNew",
-            component: () => import("@/pages/KnowledgeBaseArticle.vue"),
-            props: true,
-          },
-        ],
+        path: "kb-public",
+        name: "CustomerKnowledgeBase",
+        component: () =>
+          import("@/pages/knowledge-base/KnowledgeBaseCustomer.vue"),
+      },
+      {
+        path: "kb-public/:categoryId",
+        name: "Articles",
+        component: () => import("@/pages/knowledge-base/Articles.vue"),
+        props: true,
+      },
+      {
+        path: "kb-public/articles/:articleId",
+        name: "ArticlePublic",
+        component: () => import("@/pages/knowledge-base/Article.vue"),
+        props: true,
       },
     ],
   },
@@ -121,12 +117,13 @@ const routes = [
       auth: true,
       agent: true,
       admin: false,
+      public: false,
     },
     children: [
       {
         path: "tickets",
         name: AGENT_PORTAL_TICKET_LIST,
-        component: () => import("@/pages/Tickets.vue"),
+        component: () => import("@/pages/ticket/Tickets.vue"),
       },
       {
         path: "notifications",
@@ -136,7 +133,7 @@ const routes = [
       {
         path: "tickets/new/:templateId?",
         name: "TicketAgentNew",
-        component: () => import("@/pages/TicketNew.vue"),
+        component: () => import("@/pages/ticket/TicketNew.vue"),
         props: true,
         meta: {
           onSuccessRoute: "TicketAgent",
@@ -147,55 +144,46 @@ const routes = [
         path: "tickets/:ticketId",
         name: "TicketAgent",
         component: () =>
-          import(`@/pages/${handleMobileView("TicketAgent")}.vue`),
+          import(`@/pages/ticket/${handleMobileView("TicketAgent")}.vue`),
         props: true,
       },
       {
         path: "kb",
-        name: AGENT_PORTAL_KNOWLEDGE_BASE,
-        component: () => import("@/pages/knowledge-base/KnowledgeBase.vue"),
-        children: [
-          {
-            path: ":categoryId",
-            name: AGENT_PORTAL_KNOWLEDGE_BASE_CATEGORY,
-            props: true,
-            component: () =>
-              import("@/pages/knowledge-base/KnowledgeBaseCategory.vue"),
-          },
-          {
-            path: ":categoryId/:subCategoryId",
-            name: AGENT_PORTAL_KNOWLEDGE_BASE_SUB_CATEGORY,
-            props: true,
-            component: () =>
-              import("@/pages/knowledge-base/KnowledgeBaseSubcategory.vue"),
-          },
-        ],
+        name: "AgentKnowledgeBase",
+        component: () =>
+          import("@/pages/knowledge-base/KnowledgeBaseAgent.vue"),
       },
       {
         path: "kb/articles/:articleId",
-        name: AGENT_PORTAL_KNOWLEDGE_BASE_ARTICLE,
+        name: "Article",
+        component: () => import("@/pages/knowledge-base/Article.vue"),
         props: true,
-        component: () => import("@/pages/KnowledgeBaseArticle.vue"),
+      },
+      {
+        path: "articles/new/:id",
+        name: "NewArticle",
+        component: () => import("@/pages/knowledge-base/NewArticle.vue"),
+        props: true,
       },
       {
         path: "customers",
         name: AGENT_PORTAL_CUSTOMER_LIST,
-        component: () => import("@/pages/desk/customer/CustomerList.vue"),
+        component: () => import("@/pages/desk/customer/Customers.vue"),
       },
       {
         path: "contacts",
         name: AGENT_PORTAL_CONTACT_LIST,
-        component: () => import("@/pages/desk/contact/ContactList.vue"),
+        component: () => import("@/pages/desk/contact/Contacts.vue"),
       },
       {
         path: "agents",
         name: AGENT_PORTAL_AGENT_LIST,
-        component: () => import("@/pages/desk/agent/AgentList.vue"),
+        component: () => import("@/pages/desk/agent/Agents.vue"),
       },
       {
         path: "teams",
         name: AGENT_PORTAL_TEAM_LIST,
-        component: () => import("@/pages/desk/team/TeamList.vue"),
+        component: () => import("@/pages/desk/team/Teams.vue"),
       },
       {
         path: "teams/:teamId",
@@ -208,20 +196,9 @@ const routes = [
         name: "CannedResponses",
         component: () => import("@/pages/CannedResponses.vue"),
       },
-      {
-        path: "escalation-rules",
-        name: AGENT_PORTAL_ESCALATION_RULE_LIST,
-        component: () =>
-          import("@/pages/desk/escalation/EscalationRuleList.vue"),
-      },
     ],
   },
   // Additonal routes
-  {
-    path: "/onboarding",
-    name: ONBOARDING_PAGE,
-    component: () => import("@/pages/onboarding/SimpleOnboarding.vue"),
-  },
   {
     path: "/:pathMatch(.*)*",
     name: "Invalid Page",
@@ -240,11 +217,9 @@ export const router = createRouter({
 
 router.beforeEach(async (to, _, next) => {
   const authStore = useAuthStore();
-  const userStore = useUserStore();
-
+  isCustomerPortal.value = to.meta.public;
   if (authStore.isLoggedIn) {
     await authStore.init();
-    await userStore.users.fetch();
   }
 
   if (!authStore.isLoggedIn) {
@@ -252,4 +227,10 @@ router.beforeEach(async (to, _, next) => {
   } else {
     next();
   }
+});
+
+router.afterEach(async (to) => {
+  if (to.meta.public) return;
+  const userStore = useUserStore();
+  await userStore.users.fetch();
 });

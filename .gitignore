@@ -8,6 +8,7 @@ __pycache__/
 *.log
 tags
 node_modules
+.vscode
 
 # Distribution / packaging
 .Python
@@ -31,6 +32,7 @@ share/python-wheels/
 
 helpdesk/docs/current
 helpdesk/public/desk
+helpdesk/public/frontend
 helpdesk/public/node_modules
 helpdesk/www/helpdesk/index.html
 desk/components.d.ts
